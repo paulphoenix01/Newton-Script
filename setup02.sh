@@ -18,6 +18,11 @@ function install_crudini {
 	echocolor "Installing CRUDINI"
 	sleep 3
 	apt-get -y install crudini
+	apt install software-properties-common -y
+	add-apt-repository cloud-archive:newton -y
+	echocolor "Upgrade the packages for server"
+    	sleep 3
+	apt-get -y update && apt-get -y upgrade && apt-get -y dist-upgrade
 }
 
 #############################################

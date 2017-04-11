@@ -15,18 +15,19 @@ neutron_ctl=/etc/neutron/neutron.conf
 neutron_com=/etc/neutron/neutron.conf
 netmetadata=/etc/neutron/metadata_agent.ini
 ml2_clt=/etc/neutron/plugins/ml2/ml2_conf.ini
-lbfile=/etc/neutron/plugins/ml2/linuxbridge_agent.ini
+#lbfile=/etc/neutron/plugins/ml2/linuxbridge_agent.ini
+ovsfile=/etc/neutron/plugins/ml2/openvswitch_agent.ini
 netdhcp=/etc/neutron/dhcp_agent.ini
 netl3agent=/etc/neutron/l3_agent.ini
 
 if [ "$1" == "controller" ]; then
 
-	# echocolor "Configuring net forward for all VMs"
-	# sleep 5
-	# echo "net.ipv4.ip_forward=1" >> /etc/sysctl.conf
-	# echo "net.ipv4.conf.all.rp_filter=0" >> /etc/sysctl.conf
-	# echo "net.ipv4.conf.default.rp_filter=0" >> /etc/sysctl.conf
-	# sysctl -p
+	 echocolor "Configuring net forward for all VMs"
+	 sleep 5
+	 echo "net.ipv4.ip_forward=1" >> /etc/sysctl.conf
+	 echo "net.ipv4.conf.all.rp_filter=0" >> /etc/sysctl.conf
+	 echo "net.ipv4.conf.default.rp_filter=0" >> /etc/sysctl.conf
+	 sysctl -p
 
 	echocolor "Create DB for NEUTRON on $1 "
 	sleep 5
@@ -60,8 +61,8 @@ EOF
 	echocolor "Install NEUTRON node - Using Linux Bridge on $1"
 	sleep 5
 	apt-get -y install neutron-server neutron-plugin-ml2 \
-	neutron-linuxbridge-agent neutron-l3-agent neutron-dhcp-agent \
-	neutron-metadata-agent
+   	neutron-plugin-openvswitch-agent neutron-dhcp-agent \
+	neutron-metadata-agent python-neutronclient ipset
 
 
 	######## Backup configuration NEUTRON.CONF ##################"
@@ -123,9 +124,9 @@ EOF
 	test -f $ml2_clt.orig || cp $ml2_clt $ml2_clt.orig
 
 	## [ml2] section
-	ops_edit $ml2_clt ml2 type_drivers flat,vlan,vxlan
-	ops_edit $ml2_clt ml2 tenant_network_types vxlan
-	ops_edit $ml2_clt ml2 mechanism_drivers linuxbridge,l2population
+	ops_edit $ml2_clt ml2 type_drivers flat,vlan
+	ops_edit $ml2_clt ml2 tenant_network_types vlan
+	ops_edit $ml2_clt ml2 mechanism_drivers openvswitch
 	ops_edit $ml2_clt ml2 extension_drivers port_security
 
 
@@ -136,37 +137,41 @@ EOF
 	# ops_edit $ml2_clt ml2_type_gre tunnel_id_ranges 100:200
 
 	## [ml2_type_vxlan] section
-	ops_edit $ml2_clt ml2_type_vxlan vni_ranges 201:300
+	#ops_edit $ml2_clt ml2_type_vxlan vni_ranges 201:300
 
 	## [securitygroup] section
 	ops_edit $ml2_clt securitygroup enable_ipset True
-
-	echocolor "Configuring linuxbridge_agent"
+	ops_edit $ml2_clt securitygroup firewall_driver neutron.agent.linux.iptables_firewall.OVSHybridIptablesFirewallDriver
+	ops_edit $ml2_clt securitygroup enable_security_group True
+	
+	echocolor "Configuring OpenVSwitch Agent"
 	sleep 5
-	test -f $lbfile.orig || cp $lbfile $lbfile.orig
+	test -f $ovsfile.orig || cp $ovsfile $ovsfile.orig
 
+	ops_edit $ovsfile ovs bridge_mappings provider:br-ex
+	
 	# [linux_bridge] section
-	ops_edit $lbfile linux_bridge physical_interface_mappings provider:$EXT_INTERFACE
+	#ops_edit $lbfile linux_bridge physical_interface_mappings provider:$EXT_INTERFACE
 
 	# [vxlan] section
-	ops_edit $lbfile vxlan enable_vxlan True
-	ops_edit $lbfile vxlan local_ip $CTL_DATA_IP
-	ops_edit $lbfile vxlan l2_population True
+	#ops_edit $lbfile vxlan enable_vxlan True
+	#ops_edit $lbfile vxlan local_ip $CTL_DATA_IP
+	#ops_edit $lbfile vxlan l2_population True
 
 	# [securitygroup] section
-	ops_edit $lbfile securitygroup enable_security_group True
-	ops_edit $lbfile securitygroup firewall_driver \
-	    neutron.agent.linux.iptables_firewall.IptablesFirewallDriver
+	#ops_edit $lbfile securitygroup enable_security_group True
+	#ops_edit $lbfile securitygroup firewall_driver \
+	#    neutron.agent.linux.iptables_firewall.IptablesFirewallDriver
 
 
-	echocolor "Configuring L3 AGENT"
-	sleep 7
-	test -f $netl3agent.orig || cp $netl3agent $netl3agent.orig
+	#echocolor "Configuring L3 AGENT"
+	#sleep 7
+	#test -f $netl3agent.orig || cp $netl3agent $netl3agent.orig
 
 	## [DEFAULT] section
-	ops_edit $netl3agent DEFAULT interface_driver \
-	    neutron.agent.linux.interface.BridgeInterfaceDriver
-	ops_edit $netl3agent DEFAULT external_network_bridge
+	#ops_edit $netl3agent DEFAULT interface_driver \
+	#    neutron.agent.linux.interface.BridgeInterfaceDriver
+	#ops_edit $netl3agent DEFAULT external_network_bridge
 	# ops_edit $netl3agent DEFAULT router_delete_namespaces True
 	# ops_edit $netl3agent DEFAULT verbose True
 
@@ -178,15 +183,15 @@ EOF
 
 	## [DEFAULT] section
 	ops_edit $netdhcp DEFAULT interface_driver \
-	    neutron.agent.linux.interface.BridgeInterfaceDriver
+	    neutron.agent.linux.interface.OVSInterfaceDriver
 	ops_edit $netdhcp DEFAULT dhcp_driver neutron.agent.linux.dhcp.Dnsmasq
 	ops_edit $netdhcp DEFAULT enable_isolated_metadata True
-	ops_edit $netdhcp DEFAULT dnsmasq_config_file /etc/neutron/dnsmasq-neutron.conf
+	# ops_edit $netdhcp DEFAULT dnsmasq_config_file /etc/neutron/dnsmasq-neutron.conf
 
 
-	echocolor "Config MTU"
-	sleep 3
-	echo "dhcp-option-force=26,1454" > /etc/neutron/dnsmasq-neutron.conf
+	#echocolor "Config MTU"
+	#sleep 3
+	#echo "dhcp-option-force=26,1454" > /etc/neutron/dnsmasq-neutron.conf
 	# killall dnsmasq
 
 	echocolor "Configuring METADATA AGENT"
@@ -212,22 +217,71 @@ EOF
 	echocolor "Restarting NEUTRON service "
 	sleep 7
 	service neutron-server restart
-	service neutron-linuxbridge-agent restart
+	#service neutron-linuxbridge-agent restart
+	service neutron-openvswitch-agent restart
 	service neutron-dhcp-agent restart
 	service neutron-metadata-agent restart
-	service neutron-l3-agent restart
+	#service neutron-l3-agent restart
 
 	rm -f /var/lib/neutron/neutron.sqlite
-
+	
 	echocolor "Check service Neutron"
 	sleep 30
+	
 	neutron agent-list
+	
+	echocolor "Config IP address for br-ex"
+	ifaces=/etc/network/interfaces
+	test -f $ifaces.orig1 || cp $ifaces $ifaces.orig1
+	rm $ifaces
+cat << EOF > $ifaces
+	# The loopback network interface
+	auto lo
+	iface lo inet loopback
+
+	# The primary network interface
+	auto br-ex
+	iface br-ex inet static
+	address $CTL_EXT_IP
+	netmask 255.0.0.0
+	gateway $GATEWAY_IP_EXT
+	dns-nameservers 8.8.8.8
+
+	auto $EXT_INTERFACE
+	iface $EXT_INTERFACE inet manual
+	   up ifconfig \$IFACE 0.0.0.0 up
+	   up ip link set \$IFACE promisc on
+	   down ip link set \$IFACE promisc off
+	   down ifconfig \$IFACE down
+
+	auto $MGNT_INTERFACE
+	iface $MGNT_INTERFACE inet static
+	address $CTL_MGNT_IP
+	netmask 255.255.255.0
+EOF
+
+	echocolor "Config br-int and br-ex for OpenvSwitch"
+	sleep 5
+	# ovs-vsctl add-br br-int
+	ovs-vsctl add-br br-ex
+	ovs-vsctl add-port br-ex $EXT_INTERFACE
+
+	# Restart network
+	ifdown -a && ifup -a
+	route add default gw $GATEWAY_IP_EXT br-ex
+
+	# Add dns
+	cat << EOF > /etc/resolv.conf
+	nameserver 8.8.8.8 8.8.4.4
+EOF
+
+	
 	echocolor "Finished install NEUTRON on CONTROLLER"
 
 elif [ "$1" == "compute1" ]; then
 	echocolor "Restarting NEUTRON on $1"
 	sleep 3
-	apt -y install neutron-linuxbridge-agent
+	apt-get -y install neutron-plugin-openvswitch-agent neutron-common neutron-plugin-ml2 ipset
 	test -f $neutron_com.orig || cp $neutron_com $neutron_com.orig
 
 	ops_edit $neutron_com DEFAULT transport_url  rabbit://openstack:$RABBIT_PASS@$CTL_MGNT_IP
@@ -251,31 +305,60 @@ elif [ "$1" == "compute1" ]; then
 	ops_edit $neutron_com  keystone_authtoken username neutron
 	ops_edit $neutron_com  keystone_authtoken password $NEUTRON_PASS
 
-	echocolor "Configuring linuxbridge_agent"
+	echocolor "Configuring OVS"
 	sleep 5
-	test -f $lbfile.orig || cp $lbfile $lbfile.orig
+	test -f $ovsfile.orig || cp $ovsfile $ovsfile.orig
 
-	# [linux_bridge] section
-	ops_edit $lbfile linux_bridge physical_interface_mappings provider:$EXT_INTERFACE
+	ops_edit $ovsfile ovs bridge_mappings provider:br-ex
+        echocolor "Reset service openvswitch_agent"
+        sleep 5
+        service neutron-openvswitch-agent restart
+echocolor "Config IP address for br-ex"
+ifaces=/etc/network/interfaces
+test -f $ifaces.orig1 || cp $ifaces $ifaces.orig1
+rm $ifaces
+cat << EOF > $ifaces
+# The loopback network interface
+auto lo
+iface lo inet loopback
 
-	# [vxlan] section
-	ops_edit $lbfile vxlan enable_vxlan True
-	ops_edit $lbfile vxlan local_ip $COM1_DATA_IP
-	ops_edit $lbfile vxlan l2_population True
+# The primary network interface
+auto br-ex
+iface br-ex inet static
+address $COM1_EXT_IP
+netmask 255.0.0.0
+gateway $GATEWAY_IP_EXT
+dns-nameservers 8.8.8.8
 
-	# [securitygroup] section
-	ops_edit $lbfile securitygroup enable_security_group True
-	ops_edit $lbfile securitygroup firewall_driver \
-	    neutron.agent.linux.iptables_firewall.IptablesFirewallDriver
+auto $EXT_INTERFACE
+iface $EXT_INTERFACE inet manual
+   up ifconfig \$IFACE 0.0.0.0 up
+   up ip link set \$IFACE promisc on
+   down ip link set \$IFACE promisc off
+   down ifconfig \$IFACE down
 
-	echocolor "Restarting NEUTRON service "
+auto $MGNT_INTERFACE
+iface $MGNT_INTERFACE inet static
+address $COM1_MGNT_IP
+netmask 255.255.255.0
+EOF
+
+
+echocolor "Config br-int and br-ex for OpenvSwitch"
+sleep 5
+# ovs-vsctl add-br br-int
+ovs-vsctl add-br br-ex
+ovs-vsctl add-port br-ex $EXT_INTERFACE
+
+echocolor "DONE NEUTRON COMPUTE 1"
+
+
 	sleep 7
-	service neutron-linuxbridge-agent restart
 
 elif [ "$1" == "compute2" ]; then
 	echocolor "Restarting NEUTRON on $1"
 	sleep 3
-	apt -y install neutron-linuxbridge-agent
+	apt-get -y install neutron-plugin-openvswitch-agent neutron-common neutron-plugin-ml2 ipset
 	test -f $neutron_com.orig || cp $neutron_com $neutron_com.orig
 
 	ops_edit $neutron_com DEFAULT transport_url  rabbit://openstack:$RABBIT_PASS@$CTL_MGNT_IP
@@ -299,26 +382,55 @@ elif [ "$1" == "compute2" ]; then
 	ops_edit $neutron_com  keystone_authtoken username neutron
 	ops_edit $neutron_com  keystone_authtoken password $NEUTRON_PASS
 
-	echocolor "Configuring linuxbridge_agent"
+	echocolor "Configuring OVS Agent"
 	sleep 5
-	test -f $lbfile.orig || cp $lbfile $lbfile.orig
+	test -f $ovsfile.orig || cp $ovsfile $ovsfile.orig
 
-	# [linux_bridge] section
-	ops_edit $lbfile linux_bridge physical_interface_mappings provider:$EXT_INTERFACE
+	ops_edit $ovsfile ovs bridge_mappings provider:br-ex
+	echocolor "Reset service openvswitch_agent"
+	sleep 5
+	service neutron-openvswitch-agent restart
+	
+	echocolor "Config IP address for br-ex"
+ifaces=/etc/network/interfaces
+test -f $ifaces.orig1 || cp $ifaces $ifaces.orig1
+rm $ifaces
+cat << EOF > $ifaces
+# The loopback network interface
+auto lo
+iface lo inet loopback
 
-	# [vxlan] section
-	ops_edit $lbfile vxlan enable_vxlan True
-	ops_edit $lbfile vxlan local_ip $COM2_DATA_IP
-	ops_edit $lbfile vxlan l2_population True
+# The primary network interface
+auto br-ex
+iface br-ex inet static
+address $COM2_EXT_IP
+netmask 255.0.0.0
+gateway $GATEWAY_IP_EXT
+dns-nameservers 8.8.8.8
 
-	# [securitygroup] section
-	ops_edit $lbfile securitygroup enable_security_group True
-	ops_edit $lbfile securitygroup firewall_driver \
-	    neutron.agent.linux.iptables_firewall.IptablesFirewallDriver
+auto $EXT_INTERFACE
+iface $EXT_INTERFACE inet manual
+   up ifconfig \$IFACE 0.0.0.0 up
+   up ip link set \$IFACE promisc on
+   down ip link set \$IFACE promisc off
+   down ifconfig \$IFACE down
 
-	echocolor "Restarting NEUTRON service "
+auto $MGNT_INTERFACE
+iface $MGNT_INTERFACE inet static
+address $COM2_MGNT_IP
+netmask 255.255.255.0
+EOF
+
+
+echocolor "Config br-int and br-ex for OpenvSwitch"
+sleep 5
+# ovs-vsctl add-br br-int
+ovs-vsctl add-br br-ex
+ovs-vsctl add-port br-ex $EXT_INTERFACE
+
+echocolor "Finished install NEUTRON on CONTROLLER"
+
 	sleep 7
-	service neutron-linuxbridge-agent restart	
 
 else
 	echocolor "Khong phai node controller"

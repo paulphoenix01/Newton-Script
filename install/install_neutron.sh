@@ -268,12 +268,12 @@ EOF
 
 	# Restart network
 	ifdown -a && ifup -a
-	route add default gw $GATEWAY_IP_EXT br-ex
+	#route add default gw $GATEWAY_IP_EXT br-ex
 
 	# Add dns
-	cat << EOF > /etc/resolv.conf
-	nameserver 8.8.8.8 8.8.4.4
-EOF
+	#cat << EOF > /etc/resolv.conf
+	#nameserver 8.8.8.8 8.8.4.4
+	#EOF
 
 	
 	echocolor "Finished install NEUTRON on CONTROLLER"

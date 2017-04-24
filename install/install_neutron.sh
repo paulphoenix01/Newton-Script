@@ -123,15 +123,15 @@ EOF
 	test -f $ml2_clt.orig || cp $ml2_clt $ml2_clt.orig
 
 	## [ml2] section
-	ops_edit $ml2_clt ml2 type_drivers flat,vlan,vxlan
-	ops_edit $ml2_clt ml2 tenant_network_types vxlan
+	ops_edit $ml2_clt ml2 type_drivers flat,vlan
+	ops_edit $ml2_clt ml2 tenant_network_types vlan
 	ops_edit $ml2_clt ml2 mechanism_drivers linuxbridge,l2population
 	ops_edit $ml2_clt ml2 extension_drivers port_security
 
 
 	## [ml2_type_flat] section
 	ops_edit $ml2_clt ml2_type_flat flat_networks provider
-
+	ops_edit $ml2_clt ml2_type_vlan network_vlan_ranges vlan:20:50
 	## [ml2_type_gre] section
 	# ops_edit $ml2_clt ml2_type_gre tunnel_id_ranges 100:200
 
@@ -146,7 +146,7 @@ EOF
 	test -f $lbfile.orig || cp $lbfile $lbfile.orig
 
 	# [linux_bridge] section
-	ops_edit $lbfile linux_bridge physical_interface_mappings provider:$EXT_INTERFACE
+	ops_edit $lbfile linux_bridge physical_interface_mappings provider:$EXT_INTERFACE,vlan:$MGNT_INTERFACE
 
 	# [vxlan] section
 	ops_edit $lbfile vxlan enable_vxlan True
@@ -256,7 +256,7 @@ elif [ "$1" == "compute1" ]; then
 	test -f $lbfile.orig || cp $lbfile $lbfile.orig
 
 	# [linux_bridge] section
-	ops_edit $lbfile linux_bridge physical_interface_mappings provider:$EXT_INTERFACE
+	ops_edit $lbfile linux_bridge physical_interface_mappings provider:$EXT_INTERFACE,vlan:$MGNT_INTERFACE
 
 	# [vxlan] section
 	ops_edit $lbfile vxlan enable_vxlan True
@@ -304,7 +304,7 @@ elif [ "$1" == "compute2" ]; then
 	test -f $lbfile.orig || cp $lbfile $lbfile.orig
 
 	# [linux_bridge] section
-	ops_edit $lbfile linux_bridge physical_interface_mappings provider:$EXT_INTERFACE
+	ops_edit $lbfile linux_bridge physical_interface_mappings provider:$EXT_INTERFACE,vlan:$MGNT_INTERFACE
 
 	# [vxlan] section
 	ops_edit $lbfile vxlan enable_vxlan True

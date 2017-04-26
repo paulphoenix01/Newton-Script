@@ -123,20 +123,21 @@ EOF
 	test -f $ml2_clt.orig || cp $ml2_clt $ml2_clt.orig
 
 	## [ml2] section
-	ops_edit $ml2_clt ml2 type_drivers flat,vlan
-	ops_edit $ml2_clt ml2 tenant_network_types vlan
+	ops_edit $ml2_clt ml2 type_drivers flat,vlan,vxlan
+	ops_edit $ml2_clt ml2 tenant_network_types vxlan
 	ops_edit $ml2_clt ml2 mechanism_drivers linuxbridge,l2population
 	ops_edit $ml2_clt ml2 extension_drivers port_security
 
 
 	## [ml2_type_flat] section
 	ops_edit $ml2_clt ml2_type_flat flat_networks provider
-	ops_edit $ml2_clt ml2_type_vlan network_vlan_ranges provider
+	
+	#ops_edit $ml2_clt ml2_type_vlan network_vlan_ranges provider
 	## [ml2_type_gre] section
 	# ops_edit $ml2_clt ml2_type_gre tunnel_id_ranges 100:200
 
 	## [ml2_type_vxlan] section
-	#ops_edit $ml2_clt ml2_type_vxlan vni_ranges 201:300
+	ops_edit $ml2_clt ml2_type_vxlan vni_ranges 1000:10000
 
 	## [securitygroup] section
 	ops_edit $ml2_clt securitygroup enable_ipset True
@@ -149,14 +150,13 @@ EOF
 	ops_edit $lbfile linux_bridge physical_interface_mappings provider:$EXT_INTERFACE
 
 	# [vxlan] section
-	#ops_edit $lbfile vxlan enable_vxlan True
-	#ops_edit $lbfile vxlan local_ip $CTL_DATA_IP
-	#ops_edit $lbfile vxlan l2_population True
+	ops_edit $lbfile vxlan enable_vxlan True
+	ops_edit $lbfile vxlan local_ip $CTL_MGNT_IP
+	ops_edit $lbfile vxlan l2_population True
 
 	# [securitygroup] section
-	ops_edit $lbfile securitygroup enable_security_group True
-	ops_edit $lbfile securitygroup firewall_driver \
-	    neutron.agent.linux.iptables_firewall.IptablesFirewallDriver
+	#ops_edit $lbfile securitygroup enable_security_group True
+	ops_edit $lbfile securitygroup firewall_driver iptables
 
 
 	echocolor "Configuring L3 AGENT"
@@ -164,9 +164,13 @@ EOF
 	test -f $netl3agent.orig || cp $netl3agent $netl3agent.orig
 
 	## [DEFAULT] section
-	ops_edit $netl3agent DEFAULT interface_driver \
-	    neutron.agent.linux.interface.BridgeInterfaceDriver
+	ops_edit $netl3agent DEFAULT interface_driver linuxbridge
 	ops_edit $netl3agent DEFAULT external_network_bridge
+
+
+	#ops_edit $netl3agent DEFAULT interface_driver \
+	#    neutron.agent.linux.interface.BridgeInterfaceDriver
+	#ops_edit $netl3agent DEFAULT external_network_bridge
 	# ops_edit $netl3agent DEFAULT router_delete_namespaces True
 	# ops_edit $netl3agent DEFAULT verbose True
 
@@ -225,17 +229,16 @@ elif [ "$1" == "compute1" ]; then
 	test -f $lbfile.orig || cp $lbfile $lbfile.orig
 
 	# [linux_bridge] section
-	ops_edit $lbfile linux_bridge physical_interface_mappings provider:$EXT_INTERFACE,vlan:$MGNT_INTERFACE
+	ops_edit $lbfile linux_bridge physical_interface_mappings provider:$EXT_INTERFACE
 
 	# [vxlan] section
 	ops_edit $lbfile vxlan enable_vxlan True
-	ops_edit $lbfile vxlan local_ip $COM1_DATA_IP
+	ops_edit $lbfile vxlan local_ip $COM1_MGNT_IP
 	ops_edit $lbfile vxlan l2_population True
 
 	# [securitygroup] section
-	ops_edit $lbfile securitygroup enable_security_group True
-	ops_edit $lbfile securitygroup firewall_driver \
-	    neutron.agent.linux.iptables_firewall.IptablesFirewallDriver
+	#ops_edit $lbfile securitygroup enable_security_group True
+	ops_edit $lbfile securitygroup firewall_driver iptables
 	
 	echocolor "Configuring DHCP AGENT"
         sleep 7
@@ -243,10 +246,15 @@ elif [ "$1" == "compute1" ]; then
         test -f $netdhcp.orig || cp $netdhcp $netdhcp.orig
 
         ## [DEFAULT] section
-        ops_edit $netdhcp DEFAULT interface_driver \
-            neutron.agent.linux.interface.BridgeInterfaceDriver
-        ops_edit $netdhcp DEFAULT dhcp_driver neutron.agent.linux.dhcp.Dnsmasq
+ 	ops_edit $netdhcp DEFAULT interface_driver linuxbridge
+        ops_edit $netdhcp DEFAULT force_metadata True
         ops_edit $netdhcp DEFAULT enable_isolated_metadata True
+       
+
+	#ops_edit $netdhcp DEFAULT interface_driver \
+        #    neutron.agent.linux.interface.BridgeInterfaceDriver
+        #ops_edit $netdhcp DEFAULT dhcp_driver neutron.agent.linux.dhcp.Dnsmasq
+        #ops_edit $netdhcp DEFAULT enable_isolated_metadata True
         #ops_edit $netdhcp DEFAULT dnsmasq_config_file /etc/neutron/dnsmasq-neutron.conf
 
 
@@ -307,14 +315,13 @@ elif [ "$1" == "compute2" ]; then
 	ops_edit $lbfile linux_bridge physical_interface_mappings provider:$EXT_INTERFACE
 
 	# [vxlan] section
-	#ops_edit $lbfile vxlan enable_vxlan True
-	#ops_edit $lbfile vxlan local_ip $COM2_DATA_IP
-	#ops_edit $lbfile vxlan l2_population True
+	ops_edit $lbfile vxlan enable_vxlan True
+	ops_edit $lbfile vxlan local_ip $COM2_MGNT_IP
+	ops_edit $lbfile vxlan l2_population True
 
 	# [securitygroup] section
-	ops_edit $lbfile securitygroup enable_security_group True
-	ops_edit $lbfile securitygroup firewall_driver \
-	    neutron.agent.linux.iptables_firewall.IptablesFirewallDriver
+	#ops_edit $lbfile securitygroup enable_security_group True
+	ops_edit $lbfile securitygroup firewall_driver iptables
 
         echocolor "Configuring DHCP AGENT"
         sleep 7
@@ -322,9 +329,8 @@ elif [ "$1" == "compute2" ]; then
         test -f $netdhcp.orig || cp $netdhcp $netdhcp.orig
 
         ## [DEFAULT] section
-        ops_edit $netdhcp DEFAULT interface_driver \
-            neutron.agent.linux.interface.BridgeInterfaceDriver
-        ops_edit $netdhcp DEFAULT dhcp_driver neutron.agent.linux.dhcp.Dnsmasq
+        ops_edit $netdhcp DEFAULT interface_driver linuxbridge
+        ops_edit $netdhcp DEFAULT force_metadata True
         ops_edit $netdhcp DEFAULT enable_isolated_metadata True
         #ops_edit $netdhcp DEFAULT dnsmasq_config_file /etc/neutron/dnsmasq-neutron.conf
 

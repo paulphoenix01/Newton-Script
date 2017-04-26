@@ -125,14 +125,6 @@ EOF
 
 	test -f $ml2_clt.orig || cp $ml2_clt $ml2_clt.orig
 	
-	## Add section ml2
-	echo '
-	[ml2_arista]
-
-	[l3_arista]
-
-	' >> $ml2_clt
-
 	## [ml2] section
 	ops_edit $ml2_clt ml2 type_drivers flat,vlan
 	ops_edit $ml2_clt ml2 tenant_network_types vlan
@@ -152,9 +144,9 @@ EOF
 	ops_edit $ml2_clt ml2_arista eapi_password $CVX_PASS
 
 	## [l3_arista] section
-	ops_edit $ml2_clt primary_l3_host $EOS_IP
-	ops_edit $ml2_clt primary_l3_host_username = $EOS_USER
-	ops_edit $ml2_clt primary_l3_host_password = $EOS_PASS
+	ops_edit $ml2_clt l3_arista primary_l3_host $EOS_IP
+	ops_edit $ml2_clt l3_arista primary_l3_host_username $EOS_USER
+	ops_edit $ml2_clt l3_arista primary_l3_host_password $EOS_PASS
 
 	## [ml2_type_gre] section
 	# ops_edit $ml2_clt ml2_type_gre tunnel_id_ranges 100:200

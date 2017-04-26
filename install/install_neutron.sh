@@ -72,7 +72,7 @@ EOF
 
 	## [DEFAULT] section
 
-	ops_edit $neutron_ctl DEFAULT service_plugins router
+	ops_edit $neutron_ctl DEFAULT service_plugins arista_l3
 	ops_edit $neutron_ctl DEFAULT allow_overlapping_ips True
 	ops_edit $neutron_ctl DEFAULT auth_strategy keystone
 	ops_edit $neutron_ctl DEFAULT rpc_backend rabbit
@@ -90,6 +90,9 @@ EOF
 
 
 	## [keystone_authtoken] section
+	ops_edit $neutron_ctl keystone_authtoken auth_protocol https
+	ops_edit $neutron_ctl keystone_authtoken auth_host $CTL_MGNT_IP
+	ops_edit $neutron_ctl keystone_authtoken auth_port 35357
 	ops_edit $neutron_ctl keystone_authtoken auth_uri http://$CTL_MGNT_IP:5000
 	ops_edit $neutron_ctl keystone_authtoken auth_url http://$CTL_MGNT_IP:35357
 	ops_edit $neutron_ctl keystone_authtoken memcached_servers $CTL_MGNT_IP:11211
@@ -121,23 +124,43 @@ EOF
 	sleep 7
 
 	test -f $ml2_clt.orig || cp $ml2_clt $ml2_clt.orig
+	
+	## Add section ml2
+	echo '
+	[ml2_arista]
+
+	[l3_arista]
+
+	' >> $ml2_clt
 
 	## [ml2] section
-	ops_edit $ml2_clt ml2 type_drivers flat,vlan,vxlan
-	ops_edit $ml2_clt ml2 tenant_network_types vxlan
-	ops_edit $ml2_clt ml2 mechanism_drivers linuxbridge,l2population
+	ops_edit $ml2_clt ml2 type_drivers flat,vlan
+	ops_edit $ml2_clt ml2 tenant_network_types vlan
+	ops_edit $ml2_clt ml2 mechanism_drivers linuxbridge,l2population,arista
 	ops_edit $ml2_clt ml2 extension_drivers port_security
 
 
 	## [ml2_type_flat] section
 	ops_edit $ml2_clt ml2_type_flat flat_networks provider
 	
-	#ops_edit $ml2_clt ml2_type_vlan network_vlan_ranges provider
+	## [ml2_type_vlan]
+	ops_edit $ml2_clt ml2_type_vlan network_vlan_ranges provider:10:50
+
+	## [ml2_arista] section
+	ops_edit $ml2_clt ml2_arista eapi_host $CVX_IP
+	ops_edit $ml2_clt ml2_arista eapi_username $CVX_USER
+	ops_edit $ml2_clt ml2_arista eapi_password $CVX_PASS
+
+	## [l3_arista] section
+	ops_edit $ml2_clt primary_l3_host $EOS_IP
+	ops_edit $ml2_clt primary_l3_host_username = $EOS_USER
+	ops_edit $ml2_clt primary_l3_host_password = $EOS_PASS
+
 	## [ml2_type_gre] section
 	# ops_edit $ml2_clt ml2_type_gre tunnel_id_ranges 100:200
 
 	## [ml2_type_vxlan] section
-	ops_edit $ml2_clt ml2_type_vxlan vni_ranges 1000:10000
+	#ops_edit $ml2_clt ml2_type_vxlan vni_ranges 1000:10000
 
 	## [securitygroup] section
 	ops_edit $ml2_clt securitygroup enable_ipset True
@@ -200,7 +223,7 @@ EOF
 elif [ "$1" == "compute1" ]; then
 	echocolor "Restarting NEUTRON on $1"
 	sleep 3
-	apt -y install neutron-linuxbridge-agent neutron-dhcp-agent neutron-metadata-agent
+	apt -y install neutron-linuxbridge-agent neutron-dhcp-agent neutron-metadata-agent lldpd
 	test -f $neutron_com.orig || cp $neutron_com $neutron_com.orig
 
 	ops_edit $neutron_com DEFAULT transport_url  rabbit://openstack:$RABBIT_PASS@$CTL_MGNT_IP
@@ -283,7 +306,7 @@ elif [ "$1" == "compute1" ]; then
 elif [ "$1" == "compute2" ]; then
 	echocolor "Restarting NEUTRON on $1"
 	sleep 3
-	apt -y install neutron-linuxbridge-agent neutron-dhcp-agent neutron-metadata-agent
+	apt -y install neutron-linuxbridge-agent neutron-dhcp-agent neutron-metadata-agent lldpd
 	test -f $neutron_com.orig || cp $neutron_com $neutron_com.orig
 
 	ops_edit $neutron_com DEFAULT transport_url  rabbit://openstack:$RABBIT_PASS@$CTL_MGNT_IP

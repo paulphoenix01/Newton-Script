@@ -82,7 +82,7 @@ EOF
 	# ops_edit $neutron_ctl DEFAULT nova_url http://$CTL_MGNT_IP:8774/v2
 	# ops_edit $neutron_ctl DEFAULT verbose True
 	ops_edit $neutron_ctl DEFAULT transport_url  rabbit://openstack:$RABBIT_PASS@$CTL_MGNT_IP
-	ops_edit $neutron_ctl DEFAULT dhcp_agents_per_network = 2
+	ops_edit $neutron_ctl DEFAULT dhcp_agents_per_network  2
 
 	## [database] section
 	ops_edit $neutron_ctl database \

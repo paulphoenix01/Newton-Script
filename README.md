@@ -26,7 +26,13 @@ setup01.sh : Install and Config OpenStack Prerequisites
 setup02.sh : Install and Config OpenStack core components
 setup03.sh : Install and Config Arista Driver for OpenStack Newton.
 ``` 
+You must be root to execute the script. THe script need to be in the root directory as well.
+```
+sudo su -
+#enter password
 
+git clone https://github.com/paulphoenix01/Newton-Script/
+```
 The steps are as follow
 
 ```

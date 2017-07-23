@@ -17,13 +17,15 @@ if [ $# -ne 1 ]; then
         exit 1;
 fi
 
+## Install package on controller
 if [ "$1" == "controller" ]; then
-		bash $dir_path/install/install_keystone.sh
+	bash $dir_path/install/install_keystone.sh
         bash $dir_path/install/install_glance.sh
         bash $dir_path/install/install_nova.sh $1
         bash $dir_path/install/install_neutron.sh $1
         bash $dir_path/install/install_horizon.sh
 
+## Install package on Compute
 elif [ "$1" == "compute1" ] || [ "$1" == "compute2" ]; then
 	bash $dir_path/install/install_nova.sh $1
 	bash $dir_path/install/install_neutron.sh $1

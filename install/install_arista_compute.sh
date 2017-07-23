@@ -5,13 +5,13 @@
 source $dir_path/../config.cfg
 source $dir_path/../lib/functions.sh
 
-
+### CONFIG FILE PATH
 lb_agent_ini=/etc/neutron/plugins/ml2/linuxbridge_agent.ini
 metadata_agent_ini=/etc/neutron/metadata_agent.ini
 dhcp_agent_ini=/etc/neutron/dhcp_agent.ini
 
 
-
+### EDIT CONFIG FILE
 ops_edit $lb_agent_ini linux_bridge physical_interface_mappings provider:$EXT_INTERFACE
 ops_edit $lb_agent_ini agent extensions qos
 ops_edit $lb_agent_ini securitygroup firewall_driver iptables

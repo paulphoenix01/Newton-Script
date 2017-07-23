@@ -25,7 +25,7 @@ GRANT ALL PRIVILEGES ON nova.* TO 'nova'@'%' IDENTIFIED BY '$NOVA_DBPASS';
 FLUSH PRIVILEGES;
 EOF
 else
-	echocolor "Khong phai node Controller, khong can cai DB"
+	echocolor "Not controller node, no need config DB"
 fi
 
 if [ "$1" == "controller" ]; then
@@ -43,7 +43,7 @@ if [ "$1" == "controller" ]; then
 	openstack endpoint create --region RegionOne \
 		   compute admin http://$CTL_MGNT_IP:8774/v2.1/%\(tenant_id\)s
 else
-	echocolor "Khong phai node Controller, khong can tao endpoint"
+	echocolor "Not controller Node, no need config endpoint"
 fi
 
 
@@ -60,7 +60,7 @@ elif [ "$1" == "compute1" ] || [ "$1" == "compute2" ] ; then
 	 apt-get -y install nova-compute
 
 else 
-	 echocolor "Khong phai node COMPUE"
+	 echocolor "Not compute node, no need nova"
 fi
 
 ######## Backup configurations for NOVA ##########"
@@ -91,7 +91,7 @@ elif [ "$1" == "compute1" ]; then
 elif [ "$1" == "compute2" ]; then
 	ops_edit $nova_ctl DEFAULT my_ip $COM2_MGNT_IP
 else
-	echocolor "Khong phai node Controller"
+	echocolor "Not node Controller"
 fi
 
 
@@ -108,7 +108,7 @@ if [ "$1" == "controller" ]; then
 	ops_edit $nova_ctl cinder os_region_name RegionOne
 
 else
-	echocolor "Khong phai node Controller"
+	echocolor "Not node Controller"
 fi
 
 ## [oslo_messaging_rabbit] section
@@ -138,7 +138,7 @@ elif [ "$1" == "compute1" ] || [ "$1" == "compute2" ] ; then
 	ops_edit $nova_ctl vnc vncserver_proxyclient_address \$my_ip
 	ops_edit $nova_ctl vnc novncproxy_base_url http://$CTL_MGNT_IP:6080/vnc_auto.html
 else
-	echo "Khong can cai VNC"
+	echo "No need VNC"
 fi
 	
 
@@ -199,5 +199,5 @@ elif [ "$1" == "compute1" ] || [ "$1" == "compute2" ]; then
 	service nova-compute restart
 
 else
-	echocolor "Khong phai NOVA - CTL"
+	echocolor "On Controller, no need restart NOVA"
 fi

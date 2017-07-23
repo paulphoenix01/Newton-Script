@@ -359,9 +359,9 @@ elif [ "$1" == "compute2" ]; then
 
 
 else
-	echocolor "Khong phai node controller"
+	echocolor "Not Controller Node "
 fi
 
-echocolor "Da cau hinh xong"
+echocolor "Done Configuration"
 
 

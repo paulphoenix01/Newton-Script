@@ -2,10 +2,9 @@
 
 
 ################
+apt-get -f install
 apt-get install lldpd
 service lldpd restart
-
-fi
 
 if [ "$1" == "controller" ]; then
 	bash $dir_path/install/install_arista_controller.sh

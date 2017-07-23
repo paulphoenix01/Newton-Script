@@ -5,21 +5,21 @@
 source $dir_path/../config.cfg
 source $dir_path/../lib/functions.sh
 
-
+### CONFIG FILE PATH
 lb_agent_ini=/etc/neutron/plugins/ml2/linuxbridge_agent.ini
 metadata_agent_ini=/etc/neutron/metadata_agent.ini
 dhcp_agent_ini=/etc/neutron/dhcp_agent.ini
 ml2_conf_ini=/etc/neutron/plugins/ml2/ml2_conf.ini
 neutron_conf=/etc/neutron/neutron.conf
 
-
+### Install PIP for Arista driver
 apt-get update
 apt-get install python-pip
 
 git clone https://github.com/paulphoenix01/patched-arista; cd patched-arista; git checkout paul; pip install -r requirements.txt; python setup.py install;
 
 
-
+## CONFIG OPENSTACK FILES
 ops_edit $ml2_conf_ini ml2 type_drivers flat,vlan
 ops_edit $ml2_conf_ini ml2 tenant_network_types vlan
 ops_edit $ml2_conf_ini ml2 mechanism_drivers linxbridge,l2population,arista
@@ -53,6 +53,8 @@ ops_edit $neutron_conf keystone_authtoken auth_protocol https
 ops_edit $neutron_conf keystone_authtoken auth_host $CTL_MGNT_IP
 ops_edit $neutron_conf keystone_authtoken auth_port 35357
 
+
+### POPULATE DATABASE
 su -s /bin/sh -c "neutron-db-manage --config-file /etc/neutron/neutron.conf --config-file /etc/neutron/plugins/ml2/ml2_conf.ini --config-file /etc/neutron/plugins/ml2/ml2_conf_arista.ini upgrade heads" neutron
 
 reboot

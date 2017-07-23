@@ -8,7 +8,7 @@ source $dir_path/config.cfg
 source $dir_path/lib/functions.sh
 
 ###############################################################################
-## Khai bao duong dan
+## FILE PATH
 path_chrony=/etc/chrony/chrony.conf
 path_db_openstack=/etc/mysql/conf.d/openstack.cnf
 path_db_50server=/etc/mysql/mariadb.conf.d/50-server.cnf

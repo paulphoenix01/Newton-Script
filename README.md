@@ -1,6 +1,6 @@
 # OpenStack Newton - Automation Scripts
 ## Intro 
-This Repo contains scripts for automating the process of installing a fresh setup of OpenStack Newton, along with Arista EOS Switch as Layer 2 Layer 3 device.
+This Repo contains scripts for automating the process of installing a fresh setup of OpenStack Newton, along with Arista EOS Switch as Layer 2 Layer 3 device. Also include several simple scripts that use "iperf3" and "top" tools in Ubuntu to test Speed and CPU.
 
 ## Topology
 In order to use this script, it is required to have at least 2 nodes: 
@@ -17,6 +17,7 @@ Each node will have 2 NICs:
 - VMs must be on KVM and have nested virtualization enabled.
 - User must define all NICs name, IP address, and credential in the config.cfg
 > vim Newton-Script/config.conf
+* Note: All variables are explained in the config.cfg file.
 
 ### Script Execution
 For each node, you need to execute three script, which do the following:
@@ -47,3 +48,8 @@ bash setup03.sh compute1
 ```
 
 The VMs will reboot after finish executing the script. 
+
+
+## Test Script 
+The script for testing network speed and CPU performance also include in the repo.
+

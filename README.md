@@ -51,5 +51,37 @@ The VMs will reboot after finish executing the script.
 
 
 ## Test Script 
-The script for testing network speed and CPU performance also include in the repo.
+
+The script for testing network speed and CPU performance also include in the repo. Include 5 python scripts, which will be execute on the Client. The server must listening with the dedicated tools.
+- iperf3 script for testing maximum speed. 
+```
+python iperf3-test.py $1 $2 $3
+Example: python iperf3-test.py 192.168.100.1 1 output.txt
+  - $1: Destination IP address
+  - $2: Traffic Type. 1 = TCP traffic, 2 = UDP Traffic
+  - $3: Output text file
+```
+- nuttcp script for testing maximum speed
+```
+python nuttcp-test.py $1 $2 $3
+Example: python nuttcp-test.py 192.168.100.1 1 output.txt
+  - $1: Destination IP address
+  - $2: Traffic Type. 1 = TCP traffic, 2 = UDP Traffic
+  - $3: Output text file
+```
+- qos-flood script and qos-script: For QoS testing. QoS-script will flood with speed patterns which defined in the script, and qos-flood will flood the maximum speed of the tools.
+```
+python qos-flood.py $1 $2 $3
+python qos-script.py $1 $2 $3
+Example: python qos-flood.py 192.168.100.1 1 output.txt
+  - $1: Destination IP address
+  - $2: Traffic Type. 1 = TCP traffic, 2 = UDP Traffic
+  - $3: Output text file
+```
+- cpu-monitor script will use Ubuntu tool "top" to measure CPU statistic in 2 minute and output to a log file with timestamp.
+```
+python cpu-monitor.py $1
+Example cpu-monitor.py compute-node
+  - $1: hostname or test-name
+```
 

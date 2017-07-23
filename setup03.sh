@@ -1,9 +1,13 @@
 #!/bin/bash
 
-
+#######
+dir_path=$(dirname $0)
 ################
 apt-get -y -f install
 apt-get -y install lldpd
+apt-get -y -f install
+apt-get -y install lldpd
+
 service lldpd restart
 
 ### Install Arista Driver for Controller
